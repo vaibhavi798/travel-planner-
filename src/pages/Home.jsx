@@ -2,77 +2,152 @@ import { useState, useEffect } from "react";
 import { loadTrips } from "../utils/localStorage";
 import TripCard from "../components/TripCard";
 import TripForm from "../components/TripForm";
+import PlanWizard from "../components/wizard/PlanWizard";
+import ItineraryView from "../components/wizard/ItineraryView";
+
+const TRIPS_KEY = "triply_trips";
+
+function loadAITrips() {
+  try {
+    return JSON.parse(localStorage.getItem(TRIPS_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
 
 export default function Home() {
   const [trips, setTrips] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [aiTrips, setAiTrips] = useState([]);
+  const [showWizard, setShowWizard] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [viewing, setViewing] = useState(null); // a saved AI trip being viewed
 
   function refresh() {
     setTrips(loadTrips());
+    setAiTrips(loadAITrips());
   }
 
   useEffect(() => {
     refresh();
   }, []);
 
+  const hasAnything = trips.length > 0 || aiTrips.length > 0;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🌍</span>
-            <span className="font-bold text-gray-900 text-lg">Travel Planner</span>
+            <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">Travel Planner</span>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => setShowWizard(true)}
             className="bg-violet-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-violet-700 transition-colors"
           >
-            + New Trip
+            ✨ Plan a trip
           </button>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-        {trips.length === 0 ? (
+        {!hasAnything ? (
           <div className="text-center py-24">
             <div className="text-6xl mb-4">🗺️</div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">No trips yet</h2>
-            <p className="text-gray-500 mb-8">Start planning your next adventure</p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No trips yet</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">Let AI plan your next adventure</p>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => setShowWizard(true)}
               className="bg-violet-600 text-white font-medium px-6 py-3 rounded-xl hover:bg-violet-700 transition-colors"
             >
-              Create your first trip
+              ✨ Plan a trip with AI
             </button>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">Your Trips</h1>
-              <p className="text-gray-500 mt-1">{trips.length} {trips.length === 1 ? "trip" : "trips"} planned</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {trips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} onDelete={refresh} />
-              ))}
+            <div className="mt-4">
               <button
-                onClick={() => setShowForm(true)}
-                className="border-2 border-dashed border-gray-200 rounded-2xl p-5 text-gray-400 hover:border-violet-300 hover:text-violet-500 hover:bg-violet-50 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[160px]"
+                onClick={() => setShowManualForm(true)}
+                className="text-sm text-gray-400 dark:text-gray-500 hover:text-violet-500 underline"
               >
-                <span className="text-3xl">+</span>
-                <span className="text-sm font-medium">New Trip</span>
+                or create one manually
               </button>
             </div>
-          </>
+          </div>
+        ) : (
+          <div className="space-y-12">
+            {/* AI-generated trips */}
+            {aiTrips.length > 0 && (
+              <section>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">AI Trips</h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  {aiTrips.length} generated {aiTrips.length === 1 ? "itinerary" : "itineraries"}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {aiTrips.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setViewing(t)}
+                      className="text-left bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                    >
+                      <div className="text-2xl mb-2">✨</div>
+                      <h3 className="font-semibold leading-tight">{t.tripName}</h3>
+                      <p className="text-violet-100 text-sm mt-1">📍 {t.destination}</p>
+                      <p className="text-violet-200 text-xs mt-3">{t.days?.length || 0} days · tap to view</p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Manual trips */}
+            {trips.length > 0 && (
+              <section>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Your Trips</h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  {trips.length} {trips.length === 1 ? "trip" : "trips"} planned
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {trips.map((trip) => (
+                    <TripCard key={trip.id} trip={trip} onDelete={refresh} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
         )}
       </main>
 
-      {showForm && (
-        <TripForm
-          onClose={() => setShowForm(false)}
-          onCreate={refresh}
+      {showWizard && (
+        <PlanWizard
+          onClose={() => {
+            setShowWizard(false);
+            refresh();
+          }}
+          onSaved={refresh}
         />
+      )}
+
+      {showManualForm && (
+        <TripForm onClose={() => setShowManualForm(false)} onCreate={refresh} />
+      )}
+
+      {/* View a saved AI trip */}
+      {viewing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-4xl my-4">
+            <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900 rounded-t-2xl z-10">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Itinerary</h2>
+              <button
+                onClick={() => setViewing(null)}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-5 sm:p-6">
+              <ItineraryView itinerary={viewing} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
