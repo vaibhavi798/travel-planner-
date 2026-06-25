@@ -4,32 +4,41 @@ import TripCard from "../components/TripCard";
 import TripForm from "../components/TripForm";
 import PlanWizard from "../components/wizard/PlanWizard";
 import ItineraryView from "../components/wizard/ItineraryView";
-
-const TRIPS_KEY = "triply_trips";
-
-function loadAITrips() {
-  try {
-    return JSON.parse(localStorage.getItem(TRIPS_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
+import { getTrips, deleteTrip as apiDeleteTrip } from "../utils/api";
 
 export default function Home() {
   const [trips, setTrips] = useState([]);
   const [aiTrips, setAiTrips] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(true);
+  const [aiError, setAiError] = useState(null);
   const [showWizard, setShowWizard] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
   const [viewing, setViewing] = useState(null); // a saved AI trip being viewed
 
-  function refresh() {
+  // Manual trips still come from localStorage; AI trips now come from the API.
+  async function refresh() {
     setTrips(loadTrips());
-    setAiTrips(loadAITrips());
+    setLoadingAI(true);
+    setAiError(null);
+    try {
+      setAiTrips(await getTrips());
+    } catch {
+      setAiError("Couldn't reach the server. Is the backend running (npm run server)?");
+    } finally {
+      setLoadingAI(false);
+    }
   }
 
   useEffect(() => {
     refresh();
   }, []);
+
+  async function handleDeleteAI(e, id) {
+    e.stopPropagation(); // don't open the trip when clicking delete
+    if (!confirm("Delete this trip?")) return;
+    await apiDeleteTrip(id);
+    refresh();
+  }
 
   const hasAnything = trips.length > 0 || aiTrips.length > 0;
 
@@ -52,7 +61,21 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-        {!hasAnything ? (
+        {aiError && (
+          <div className="mb-8 border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 rounded-2xl p-5 flex items-center justify-between gap-4">
+            <p className="text-sm text-red-700 dark:text-red-300">⚠️ {aiError}</p>
+            <button
+              onClick={refresh}
+              className="bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-red-700 transition-colors flex-shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {loadingAI && !hasAnything && !aiError ? (
+          <div className="text-center py-24 text-gray-400 dark:text-gray-500">Loading your trips…</div>
+        ) : !hasAnything && !aiError ? (
           <div className="text-center py-24">
             <div className="text-6xl mb-4">🗺️</div>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No trips yet</h2>
@@ -83,16 +106,23 @@ export default function Home() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {aiTrips.map((t) => (
-                    <button
-                      key={t.id}
+                    <div
+                      key={t._id}
                       onClick={() => setViewing(t)}
-                      className="text-left bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                      className="cursor-pointer text-left bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white hover:shadow-lg hover:-translate-y-0.5 transition-all relative group"
                     >
+                      <button
+                        onClick={(e) => handleDeleteAI(e, t._id)}
+                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-white/70 hover:text-white text-lg leading-none"
+                        title="Delete trip"
+                      >
+                        ×
+                      </button>
                       <div className="text-2xl mb-2">✨</div>
                       <h3 className="font-semibold leading-tight">{t.tripName}</h3>
                       <p className="text-violet-100 text-sm mt-1">📍 {t.destination}</p>
                       <p className="text-violet-200 text-xs mt-3">{t.days?.length || 0} days · tap to view</p>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </section>

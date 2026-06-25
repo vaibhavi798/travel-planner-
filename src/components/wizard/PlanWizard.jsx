@@ -6,6 +6,7 @@ import {
   buildItineraryPrompt,
 } from "../../utils/wizardPrompts";
 import ItineraryView from "./ItineraryView";
+import { saveTrip as apiSaveTrip } from "../../utils/api";
 
 const WEATHER_OPTIONS = ["Warm and sunny", "Cold and crisp", "Mild", "No preference"];
 const EXPERIENCE_OPTIONS = ["Adventure", "Sightseeing", "Relaxed", "Foodie", "Culture", "Nature", "Nightlife"];
@@ -22,8 +23,6 @@ const SPENDING_STYLES = [
   { label: "Comfort", desc: "Mid-range hotels, sit-down restaurants, occasional taxis" },
   { label: "Luxury", desc: "4–5 star hotels, fine dining, private transfers" },
 ];
-
-const TRIPS_KEY = "triply_trips";
 
 const initialState = {
   path: null, // 'A' | 'B'
@@ -317,20 +316,15 @@ export default function PlanWizard({ onClose, onSaved }) {
     }
   }
 
-  function saveTrip(itinerary) {
-    let trips = [];
+  async function saveTrip(itinerary) {
+    // Save to the backend (MongoDB) instead of localStorage.
+    // The server assigns a real _id, so we no longer generate one here.
     try {
-      trips = JSON.parse(localStorage.getItem(TRIPS_KEY)) || [];
-    } catch {
-      trips = [];
+      await apiSaveTrip(itinerary);
+      if (onSaved) onSaved();
+    } catch (err) {
+      console.error("Failed to save trip:", err.message);
     }
-    trips.push({
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      ...itinerary,
-    });
-    localStorage.setItem(TRIPS_KEY, JSON.stringify(trips));
-    if (onSaved) onSaved();
   }
 
   // Highlights available to mix = highlights + addedByAI from every option.
