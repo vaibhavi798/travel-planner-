@@ -1,24 +1,31 @@
 import { useNavigate } from "react-router-dom";
-import { deleteTrip } from "../utils/localStorage";
+import { deleteTrip } from "../utils/api";
 
 const EMOJI_BG = ["bg-violet-100", "bg-sky-100", "bg-emerald-100", "bg-amber-100", "bg-rose-100"];
 const EMOJI_TEXT = ["text-violet-600", "text-sky-600", "text-emerald-600", "text-amber-600", "text-rose-600"];
 
+// Pick a stable color 0-4 from a string id (Mongo _id).
+function colorFromId(id = "") {
+  let sum = 0;
+  for (const ch of id) sum += ch.charCodeAt(0);
+  return sum % 5;
+}
+
 export default function TripCard({ trip, onDelete }) {
   const navigate = useNavigate();
-  const colorIdx = trip.id % 5 || 0;
+  const colorIdx = colorFromId(trip._id);
 
-  function handleDelete(e) {
+  async function handleDelete(e) {
     e.stopPropagation();
     if (confirm(`Delete "${trip.name}"?`)) {
-      deleteTrip(trip.id);
+      await deleteTrip(trip._id);
       onDelete();
     }
   }
 
   return (
     <div
-      onClick={() => navigate(`/trip/${trip.id}`)}
+      onClick={() => navigate(`/trip/${trip._id}`)}
       className="bg-white border border-gray-100 rounded-2xl p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
     >
       <div className="flex items-start justify-between gap-3">

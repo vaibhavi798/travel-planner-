@@ -320,7 +320,7 @@ export default function PlanWizard({ onClose, onSaved }) {
     // Save to the backend (MongoDB) instead of localStorage.
     // The server assigns a real _id, so we no longer generate one here.
     try {
-      await apiSaveTrip(itinerary);
+      await apiSaveTrip({ ...itinerary, type: "ai" });
       if (onSaved) onSaved();
     } catch (err) {
       console.error("Failed to save trip:", err.message);

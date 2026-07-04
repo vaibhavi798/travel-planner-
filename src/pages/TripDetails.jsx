@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getTripById, updateTrip } from "../utils/localStorage";
+import { getTripById, updateTrip } from "../utils/api";
 import { buildDayList } from "../utils/itineraryLogic";
 import CityForm from "../components/CityForm";
 import DayPlanner from "../components/DayPlanner";
@@ -12,14 +12,17 @@ export default function TripDetails() {
   const [showCityForm, setShowCityForm] = useState(false);
 
   useEffect(() => {
-    const found = getTripById(Number(id));
-    if (!found) navigate("/");
-    else setTrip(found);
+    getTripById(id)
+      .then((found) => setTrip(found))
+      .catch(() => navigate("/"));
   }, [id]);
 
+  // Update the UI immediately (optimistic), then persist to the database.
   function save(updated) {
-    updateTrip(updated);
     setTrip({ ...updated });
+    updateTrip(id, updated).catch(() => {
+      alert("Couldn't save your change to the server.");
+    });
   }
 
   function handleAddCity(city) {

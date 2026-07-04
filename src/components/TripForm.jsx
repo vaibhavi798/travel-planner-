@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { createTrip } from "../utils/localStorage";
+import { saveTrip } from "../utils/api";
 
 export default function TripForm({ onClose, onCreate }) {
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [totalDays, setTotalDays] = useState(7);
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || saving) return;
 
     const trip = {
-      id: Date.now(),
+      type: "manual",
       name: name.trim(),
       startDate: startDate || null,
       totalDays: Number(totalDays),
@@ -19,9 +20,15 @@ export default function TripForm({ onClose, onCreate }) {
       activitiesMap: {},
     };
 
-    createTrip(trip);
-    onCreate(trip);
-    onClose();
+    setSaving(true);
+    try {
+      await saveTrip(trip);
+      onCreate();
+      onClose();
+    } catch {
+      alert("Couldn't save the trip. Is the backend running?");
+      setSaving(false);
+    }
   }
 
   return (

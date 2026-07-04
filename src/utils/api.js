@@ -15,6 +15,26 @@ export async function getTrips() {
   return res.json();
 }
 
+// GET one trip by its MongoDB _id
+export async function getTripById(id) {
+  const res = await fetch(`${API_BASE}/${id}`);
+  if (!res.ok) throw new Error("Failed to load trip");
+  return res.json();
+}
+
+// PUT (update) a trip by its _id; returns the updated trip
+export async function updateTrip(id, trip) {
+  // Don't send Mongo-managed fields back in the update body
+  const { _id, createdAt, updatedAt, __v, ...payload } = trip;
+  const res = await fetch(`${API_BASE}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to update trip");
+  return res.json();
+}
+
 // POST a new trip; returns the saved trip (now with a real _id from MongoDB)
 export async function saveTrip(trip) {
   const res = await fetch(API_BASE, {

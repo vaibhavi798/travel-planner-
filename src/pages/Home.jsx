@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { loadTrips } from "../utils/localStorage";
 import TripCard from "../components/TripCard";
 import TripForm from "../components/TripForm";
 import PlanWizard from "../components/wizard/PlanWizard";
@@ -15,13 +14,14 @@ export default function Home() {
   const [showManualForm, setShowManualForm] = useState(false);
   const [viewing, setViewing] = useState(null); // a saved AI trip being viewed
 
-  // Manual trips still come from localStorage; AI trips now come from the API.
+  // Both manual and AI trips now live in the database. Load all, split by type.
   async function refresh() {
-    setTrips(loadTrips());
     setLoadingAI(true);
     setAiError(null);
     try {
-      setAiTrips(await getTrips());
+      const all = await getTrips();
+      setTrips(all.filter((t) => t.type === "manual"));
+      setAiTrips(all.filter((t) => t.type !== "manual")); // AI trips (or untyped legacy)
     } catch {
       setAiError("Couldn't reach the server. Is the backend running (npm run server)?");
     } finally {
@@ -137,7 +137,7 @@ export default function Home() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {trips.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} onDelete={refresh} />
+                    <TripCard key={trip._id} trip={trip} onDelete={refresh} />
                   ))}
                 </div>
               </section>
