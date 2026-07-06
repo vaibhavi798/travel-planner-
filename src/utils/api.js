@@ -6,7 +6,10 @@
 //
 // The base URL points at the Express server (port 5001). Later, when you
 // deploy, you'd move this into an env var (VITE_API_URL).
-const API_BASE = "http://localhost:5001/api/trips";
+// In production, set VITE_API_URL to your deployed backend URL (e.g.
+// https://triply-api.onrender.com). Locally it falls back to localhost.
+const SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_BASE = `${SERVER_URL}/api/trips`;
 
 // GET all trips (newest first — the server already sorts them)
 export async function getTrips() {

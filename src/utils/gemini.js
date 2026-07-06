@@ -2,7 +2,10 @@
 // holds the Gemini key privately. This means the key is never shipped to the
 // browser (the security fix). Prompts are still built on the frontend and sent
 // to the server, which forwards them to Gemini.
-const AI_ENDPOINT = "http://localhost:5001/api/ai";
+// In production, set VITE_API_URL to your deployed backend URL. Locally it
+// falls back to localhost.
+const SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const AI_ENDPOINT = `${SERVER_URL}/api/ai`;
 
 /**
  * Sends a prompt to our backend (which calls Gemini) and returns the cleaned text.
