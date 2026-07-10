@@ -1,5 +1,5 @@
 import express from "express";
-import { callGemini } from "../gemini.js";
+import { callLLM } from "../llm.js";
 
 // Proxy route: the browser sends a prompt here, and THIS server calls Gemini
 // using its private key. The key never reaches the client.
@@ -11,7 +11,7 @@ router.post("/", async (req, res) => {
   if (!prompt) return res.status(400).json({ error: "Missing 'prompt' in request body." });
 
   try {
-    const text = await callGemini(prompt);
+    const text = await callLLM(prompt);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });
